@@ -1,0 +1,41 @@
+# OPTIONAL and MANUAL. This workflow never runs automatically (no push/PR trigger).
+# It only does something if you start it from the Actions tab AND have added the
+# EC2_HOST, EC2_USER and EC2_SSH_KEY repository secrets. Without them it exits
+# successfully after printing a notice.
+name: Deploy to EC2 (optional, manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_USER: ${{ secrets.EC2_USER }}
+      SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+    steps:
+      - name: Check EC2 secrets
+        id: check
+        run: |
+          if [ -z "$EC2_HOST" ] || [ -z "$EC2_USER" ] || [ -z "$SSH_KEY" ]; then
+            echo "::notice::EC2 secrets are not configured - skipping deployment."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Configure SSH
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+      - name: Deploy to EC2
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          ssh -i ~/.ssh/deploy_key "$EC2_USER@$EC2_HOST" \
+            "cd ~/orderstream && git fetch origin main && git reset --hard origin/main && docker compose up -d --build --remove-orphans && docker image prune -f"
+      - name: Smoke test
+        if: steps.check.outputs.configured == 'true'
+        run: curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-connrefused "http://$EC2_HOST:8000/health"
