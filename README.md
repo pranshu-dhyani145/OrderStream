@@ -6,14 +6,14 @@ A Kafka-based, event-driven order processing pipeline, containerised with Docker
 
 ## What it does
 
-A client places an order over HTTP. The API does **not** talk to the processor directly. It publishes an `OrderCreated` event to Apache Kafka, and a separate consumer service reads the event, validates it, and stores it in SQLite. Producer and consumer are decoupled: either can be restarted or scaled independently and no events are lost.
+A client places an order over HTTP. The API does **not** talk to the processor directly. It publishes an `OrderCreated` event to Apache Kafka, and a separate consumer service reads the event, validates it, and stores it in SQLite. Producer and consumer are decoupled: either can be restarted or scaled independently, while Kafka retains events until they are consumed.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
     C[Client<br/>browser / curl] -->|POST /orders| A[FastAPI<br/>producer]
-    A -->|publish, key=user_id| K[(Kafka<br/>topic: orders<br/>P0 | P1)]
+    A -->|publish, key=user_id| K[(Kafka<br/>topic: orders<br/>P0 and P1)]
     K -->|consumer group<br/>order-processors| W[Consumer<br/>validate + process]
     W -->|valid| D[(SQLite<br/>shared volume)]
     W -.->|invalid| Q[(Kafka<br/>orders.dlq)]
