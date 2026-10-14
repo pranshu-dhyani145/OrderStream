@@ -1,6 +1,6 @@
 # OrderStream
 
-A Kafka-based, event-driven order processing pipeline, containerised with Docker Compose, tested with pytest, and validated by a GitHub Actions CI pipeline. The stack is also prepared for optional deployment to AWS EC2 (not currently deployed).
+A Kafka-based, event-driven order processing pipeline, containerised with Docker Compose, tested with pytest, and validated by a GitHub Actions CI pipeline. The stack is also prepared for optional deployment to AWS EC2 (currently deployed).
 
 ![CI/CD](https://github.com/pranshu-dhyani145/OrderStream/actions/workflows/ci-cd.yml/badge.svg)
 
